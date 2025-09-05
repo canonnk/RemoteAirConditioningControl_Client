@@ -1,0 +1,235 @@
+<!-- pages/index/index.vue -->
+<template>
+	<view class="home-container">
+		<!-- 1. 自定义导航栏 -->
+		<view class="custom-navbar">
+			<view class="nav-left">
+				<text class="home-name">我的家</text>
+				<text class="icon-arrow">▼</text>
+			</view>
+			<view class="nav-right">
+				<view class="perfect-info">完善账号信息</view>
+				<view class="add-btn">+</view>
+			</view>
+		</view>
+
+		<!-- 2. 房间分类标签 -->
+		<view class="room-tabs">
+			<text 
+				v-for="(tab, index) in tabs" 
+				:key="index"
+				class="tab-item" 
+				:class="{'active': activeTab === index}"
+				@click="changeTab(index)"
+			>
+				{{ tab }}
+			</text>
+		</view>
+
+		<!-- 3. 设备卡片列表 -->
+		<view class="device-list">
+			<DeviceCard 
+				v-for="device in deviceList" 
+				:key="device.id"
+				:device="device"
+				@switch-change="handleSwitchChange"
+			/>
+		</view>
+		
+		<!-- 如果没有设备，显示添加按钮 -->
+		<view class="no-device" v-if="deviceList.length === 0">
+			<text>暂无设备，请添加</text>
+			<button class="add-device-btn">添加</button>
+		</view>
+
+	</view>
+</template>
+
+<script>
+	import DeviceCard from '@/components/racc/DeviceCard/DeviceCard.vue';
+
+	export default {
+		components: {
+			DeviceCard
+		},
+		data() {
+			return {
+				activeTab: 0,
+				tabs: ['全部', '客厅', '卧室', '其他'],
+				deviceList: [
+					{ 
+						id: 1, 
+						name: '客厅智能灯', 
+						status: '在线', 
+						isOn: true,
+						icon: 'https://storage.googleapis.com/generativeai-assets/images/3f8216167b5e43f5.png'
+					},
+					{ 
+						id: 2, 
+						name: '卧室空调', 
+						status: '在线', 
+						isOn: false,
+						icon: 'https://storage.googleapis.com/generativeai-assets/images/65c8959f6b4329d9.png'
+					},
+					{ 
+						id: 3, 
+						name: '加湿器', 
+						status: '离线', 
+						isOn: false,
+						icon: 'https://storage.googleapis.com/generativeai-assets/images/15f606411516e15d.png'
+					}
+				]
+			};
+		},
+		methods: {
+			changeTab(index) {
+				this.activeTab = index;
+				// 在这里可以根据不同的tab来筛选deviceList
+				console.log("切换到:", this.tabs[index]);
+			},
+			handleSwitchChange(payload) {
+				// 更新设备列表中的状态
+				const device = this.deviceList.find(d => d.id === payload.id);
+				if (device) {
+					device.isOn = payload.isOn;
+				}
+			}
+		}
+	}
+</script>
+
+<style>
+	/* 页面背景色 */
+	.home-container {
+		background-color: #f7f8fa;
+		min-height: 100vh;
+		padding: 0 15px;
+	}
+
+	/* 1. 自定义导航栏样式 */
+	.custom-navbar {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding-top: var(--status-bar-height); /* 适配不同机型的状态栏 */
+		height: 44px;
+		line-height: 44px;
+	}
+	.nav-left {
+		display: flex;
+		align-items: center;
+	}
+	.home-name {
+		font-size: 20px;
+		font-weight: bold;
+	}
+	.icon-arrow {
+		font-size: 12px;
+		margin-left: 5px;
+		color: #666;
+	}
+	.nav-right {
+		display: flex;
+		align-items: center;
+	}
+	.perfect-info {
+		font-size: 12px;
+		background-color: #ffebeb;
+		color: #fa5151;
+		padding: 4px 8px;
+		border-radius: 12px;
+		margin-right: 15px;
+	}
+	.add-btn {
+		width: 28px;
+		height: 28px;
+		line-height: 28px;
+		text-align: center;
+		background-color: #f2f3f5;
+		color: #333;
+		border-radius: 50%;
+		font-size: 20px;
+		font-weight: bold;
+	}
+
+	/* 2. 房间分类标签 */
+	.room-tabs {
+		display: flex;
+		margin-top: 20px;
+		margin-bottom: 20px;
+	}
+	.tab-item {
+		margin-right: 25px;
+		font-size: 16px;
+		color: #666;
+		padding-bottom: 5px;
+		border-bottom: 2px solid transparent;
+		transition: all 0.2s;
+	}
+	.tab-item.active {
+		font-size: 18px;
+		font-weight: bold;
+		color: #333;
+		border-bottom: 2px solid #3c9cff;
+	}
+
+	/* 3. 设备列表 */
+	.device-list {
+		padding-bottom: 20px; /* 避免列表底部内容被遮挡 */
+	}
+	
+	/* 4. 无设备时的占位 */
+	.no-device {
+		text-align: center;
+		color: #999;
+		padding-top: 100px;
+	}
+	.add-device-btn {
+		width: 120px;
+		margin-top: 20px;
+		background-color: #3c9cff;
+		color: white;
+		border-radius: 20px;
+	}
+</style>```
+
+---
+
+### 步骤 5: 创建设备设置页
+
+在 `pages` 目录下创建 `device-settings/device-settings.vue`。这是一个简单的占位页，用于演示导航功能。
+
+```vue
+<!-- pages/device-settings/device-settings.vue -->
+<template>
+	<view class="settings-container">
+		<text>这是设备ID为 {{ deviceId }} 的设置页面</text>
+		<!-- 在这里可以添加该设备的具体设置项 -->
+	</view>
+</template>
+
+<script>
+	export default {
+		data() {
+			return {
+				deviceId: null
+			};
+		},
+		onLoad(options) {
+			// onLoad生命周期函数可以获取页面跳转时传递的参数
+			if (options.id) {
+				this.deviceId = options.id;
+			}
+		}
+	}
+</script>
+
+<style>
+	.settings-container {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		height: 200px;
+		color: #666;
+	}
+</style>

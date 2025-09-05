@@ -65,6 +65,27 @@
 				"navigationBarTitleText": "阅读记录",
 				"enablePullDownRefresh": true
 			}
+		},
+		{
+			"path" : "components/racc/DeviceCard/DeviceCard",
+			"style" : 
+			{
+				"navigationBarTitleText" : ""
+			}
+		},
+		{
+			"path" : "pages/myhome/index/index",
+			"style" : 
+			{
+				"navigationBarTitleText" : ""
+			}
+		},
+		{
+			"path" : "pages/myhome/index/test",
+			"style" : 
+			{
+				"navigationBarTitleText" : ""
+			}
 		}
 		// #ifdef APP
 		, {
@@ -246,6 +267,7 @@
 		"backgroundColor": "#FFFFFF",
 		"list": [{
 			"pagePath": "pages/list/list",
+			//"pagePath": "pages/myhome/index/test",
 			"iconPath": "static/tabbar/list.png",
 			"selectedIconPath": "static/tabbar/list_active.png",
 			"text": "家庭"

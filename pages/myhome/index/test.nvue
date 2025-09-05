@@ -1,0 +1,13 @@
+<template>
+	<view>
+		<text>this is my page</text>
+	</view>
+</template>
+
+<script setup>
+	
+</script>
+
+<style>
+	       
+</style>
