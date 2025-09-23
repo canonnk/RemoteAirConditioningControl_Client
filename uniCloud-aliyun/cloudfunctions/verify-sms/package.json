@@ -1,0 +1,9 @@
+{
+  "name": "verify-sms",
+  "version": "1.0.0",
+  "description": "验证短信验证码",
+  "main": "index.js",
+  "dependencies": {
+    
+  }
+}

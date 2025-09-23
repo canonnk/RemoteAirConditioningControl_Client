@@ -1,0 +1,9 @@
+{
+  "name": "check-token",
+  "version": "1.0.0",
+  "description": "验证用户token",
+  "main": "index.js",
+  "dependencies": {
+    
+  }
+}
