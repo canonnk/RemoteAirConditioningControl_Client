@@ -439,20 +439,32 @@ export default {
 
 .device-list {
   flex: 1;
-  padding: 40rpx;
+  /*padding: 40rpx;*/
 }
 
 .device-grid {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
+  /* 新增：将边距移到这里 */
+  padding: 40rpx; 
+  /* 新增：确保盒子模型计算正确，这是关键保险！ */
+  box-sizing: border-box; 
+  
+  /* 保持 Grid 布局 */
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* 创建两列，每列占据一半的可用空间 */
+  gap: 20rpx; /* 定义行与列之间的间距为 20rpx */
+
+  /* 保持这些属性 */
   width: 100%;
-  padding: 0;
   margin: 0;
 }
 
 .device-card {
-  width: calc(50% - 15rpx);
+  /* 确保这里没有 width 和 margin */
+  /* width: ...; */
+  /* margin-right: ...; */
+  /* margin-bottom: ...; */
+
+  /* 其他样式保持不变 */
   background-color: #fff;
   border-radius: 16rpx;
   padding: 30rpx;
@@ -462,15 +474,13 @@ export default {
   flex-direction: column;
   box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.1);
   transition: all 0.3s ease;
-  margin-right: 15rpx;
-  margin-bottom: 20rpx;
   box-sizing: border-box;
 }
-
+/*
 .device-card:nth-child(2n) {
   margin-right: 0;
 }
-
+*/
 .dark-theme .device-card {
   background-color: #1a1a1a;
   box-shadow: 0 2px 8px rgba(255,255,255,0.1);
