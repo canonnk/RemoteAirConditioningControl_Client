@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>添加设备功能测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+        }
+        
+        .step-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .step-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .step-desc {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.5;
+        }
+        
+        .radar-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+        
+        .radar-bg {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 30px;
+        }
+        
+        .radar-circle {
+            position: absolute;
+            border: 2px solid rgba(0, 122, 255, 0.3);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .circle-1 {
+            width: 60px;
+            height: 60px;
+        }
+        
+        .circle-2 {
+            width: 120px;
+            height: 120px;
+        }
+        
+        .circle-3 {
+            width: 180px;
+            height: 180px;
+        }
+        
+        .radar-circle.scanning {
+            animation: radar-pulse 2s infinite;
+        }
+        
+        .radar-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            background-color: #007aff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: white;
+        }
+        
+        .progress-text {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background-color: #e5e5e5;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background-color: #007aff;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+        
+        .search-btn {
+            width: 100%;
+            background-color: #007aff;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 15px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        
+        .search-btn:hover {
+            background-color: #0056b3;
+        }
+        
+        .search-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .device-info {
+            background-color: #f8f9fa;
+            border-radius: 16px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .device-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        
+        .device-name {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .device-type {
+            font-size: 16px;
+            color: #007aff;
+            margin-bottom: 8px;
+        }
+        
+        .device-code {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .form-item {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        
+        .form-label {
+            font-size: 14px;
+            color: #333;
+            display: block;
+            margin-bottom: 8px;
+        }
+        
+        .form-input {
+            width: 100%;
+            background-color: #fff;
+            border: 1px solid #e5e5e5;
+            border-radius: 12px;
+            padding: 12px 15px;
+            font-size: 16px;
+            color: #333;
+            box-sizing: border-box;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        @keyframes radar-pulse {
+            0% { transform: translate(-50%, -50%) scale(0.8); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1.2); opacity: 0; }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .status-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 网络检测阶段 -->
+        <div id="network-step">
+            <div class="step-header">
+                <div class="step-title">网络检测</div>
+                <div class="step-desc">正在检测网络连接状态...</div>
+            </div>
+            
+            <div style="text-align: center;">
+                <div class="status-icon">📡</div>
+                <div id="network-status">正在检测网络连接...</div>
+            </div>
+        </div>
+
+        <!-- 设备搜索阶段 -->
+        <div id="search-step" class="hidden">
+            <div class="step-header">
+                <div class="step-title">搜索设备</div>
+                <div class="step-desc">正在搜索附近的智能设备...</div>
+            </div>
+            
+            <div class="radar-container">
+                <div class="radar-bg">
+                    <div class="radar-circle circle-1" id="radar1"></div>
+                    <div class="radar-circle circle-2" id="radar2"></div>
+                    <div class="radar-circle circle-3" id="radar3"></div>
+                    <div class="radar-center">📡</div>
+                </div>
+                
+                <div class="progress-text" id="search-status">点击开始搜索设备</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="search-progress"></div>
+                </div>
+            </div>
+            
+            <button class="search-btn" id="search-btn" onclick="startSearch()">开始搜索设备</button>
+        </div>
+
+        <!-- 设备信息显示 -->
+        <div id="found-step" class="hidden">
+            <div class="step-header">
+                <div class="step-title">发现设备</div>
+                <div class="step-desc">找到以下设备，请确认信息</div>
+            </div>
+            
+            <div class="device-info">
+                <div class="device-icon" id="device-icon">💡</div>
+                <div class="device-name" id="device-name">智能灯_001</div>
+                <div class="device-type" id="device-type">智能灯</div>
+                <div class="device-code" id="device-code">设备码: SL12345678</div>
+                <div style="color: #ff4757;">WiFi状态: 未连接</div>
+            </div>
+            
+            <button class="search-btn" onclick="goToConfig()">下一步</button>
+        </div>
+
+        <!-- WiFi配置阶段 -->
+        <div id="config-step" class="hidden">
+            <div class="step-header">
+                <div class="step-title">配置设备</div>
+                <div class="step-desc">请设置设备的WiFi和名称</div>
+            </div>
+            
+            <div class="form-item">
+                <label class="form-label">设备名称</label>
+                <input class="form-input" id="device-name-input" placeholder="请输入设备名称" maxlength="20">
+            </div>
+            
+            <div class="form-item">
+                <label class="form-label">WiFi名称</label>
+                <input class="form-input" id="wifi-name-input" placeholder="请输入WiFi名称">
+            </div>
+            
+            <div class="form-item">
+                <label class="form-label">WiFi密码</label>
+                <input class="form-input" type="password" id="wifi-password-input" placeholder="请输入WiFi密码">
+            </div>
+            
+            <button class="search-btn" onclick="configDevice()">配置设备</button>
+        </div>
+
+        <!-- 连接中阶段 -->
+        <div id="connecting-step" class="hidden">
+            <div class="step-header">
+                <div class="step-title">连接中</div>
+                <div class="step-desc">设备正在连接WiFi，请稍候...</div>
+            </div>
+            
+            <div style="text-align: center;">
+                <div class="status-icon">⚙️</div>
+                <div id="connecting-status">正在发送配置...</div>
+                <div style="margin: 20px 0;">
+                    <div style="display: flex; justify-content: center; gap: 15px; margin-bottom: 15px;">
+                        <div class="dot" id="dot1" style="width: 12px; height: 12px; border-radius: 50%; background-color: #007aff;"></div>
+                        <div class="dot" id="dot2" style="width: 12px; height: 12px; border-radius: 50%; background-color: #e5e5e5;"></div>
+                        <div class="dot" id="dot3" style="width: 12px; height: 12px; border-radius: 50%; background-color: #e5e5e5;"></div>
+                    </div>
+                    <div id="connecting-text">发送配置</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 完成阶段 -->
+        <div id="success-step" class="hidden">
+            <div class="step-header">
+                <div class="step-title">添加成功</div>
+                <div class="step-desc">设备已成功添加到您的设备列表</div>
+            </div>
+            
+            <div style="text-align: center;">
+                <div style="font-size: 64px; margin-bottom: 20px;">✅</div>
+                <div style="font-size: 18px; color: #333; margin-bottom: 30px;" id="success-text">设备添加成功！</div>
+                
+                <div style="display: flex; gap: 15px;">
+                    <button class="search-btn" style="flex: 1;" onclick="alert('跳转到设备列表')">查看设备</button>
+                    <button class="search-btn" style="flex: 1; background-color: #f8f9fa; color: #333; border: 1px solid #e5e5e5;" onclick="restart()">再添加一个</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 'network';
+        let isScanning = false;
+        let deviceInfo = {};
+        
+        // 显示指定步骤
+        function showStep(step) {
+            document.querySelectorAll('[id$="-step"]').forEach(el => {
+                el.classList.add('hidden');
+            });
+            document.getElementById(step + '-step').classList.remove('hidden');
+            currentStep = step;
+        }
+        
+        // 模拟网络检测
+        function checkNetwork() {
+            setTimeout(() => {
+                document.getElementById('network-status').textContent = '已连接到设备WiFi';
+                setTimeout(() => {
+                    showStep('search');
+                }, 1000);
+            }, 2000);
+        }
+        
+        // 开始搜索设备
+        function startSearch() {
+            if (isScanning) return;
+            
+            isScanning = true;
+            document.getElementById('search-btn').disabled = true;
+            document.getElementById('search-btn').textContent = '搜索中...';
+            
+            // 启动雷达动画
+            document.querySelectorAll('.radar-circle').forEach(circle => {
+                circle.classList.add('scanning');
+            });
+            
+            let progress = 0;
+            const progressBar = document.getElementById('search-progress');
+            const statusText = document.getElementById('search-status');
+            
+            const interval = setInterval(() => {
+                progress += 10;
+                progressBar.style.width = progress + '%';
+                
+                if (progress < 50) {
+                    statusText.textContent = '正在扫描网络...';
+                } else if (progress < 80) {
+                    statusText.textContent = '正在获取设备信息...';
+                } else {
+                    statusText.textContent = '正在验证设备...';
+                }
+                
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    statusText.textContent = '设备搜索完成';
+                    
+                    // 模拟设备信息
+                    const deviceTypes = ['智能灯', '智能插座', '智能开关', '环境监测仪'];
+                    const randomType = deviceTypes[Math.floor(Math.random() * deviceTypes.length)];
+                    
+                    deviceInfo = {
+                        deviceType: randomType,
+                        deviceCode: 'SL' + Math.random().toString().substr(2, 8),
+                        deviceName: randomType + '_' + Math.random().toString().substr(2, 3)
+                    };
+                    
+                    // 更新设备信息显示
+                    document.getElementById('device-type').textContent = deviceInfo.deviceType;
+                    document.getElementById('device-name').textContent = deviceInfo.deviceName;
+                    document.getElementById('device-code').textContent = '设备码: ' + deviceInfo.deviceCode;
+                    document.getElementById('device-name-input').value = deviceInfo.deviceName;
+                    
+                    setTimeout(() => {
+                        showStep('found');
+                    }, 500);
+                }
+            }, 300);
+        }
+        
+        // 前往配置页面
+        function goToConfig() {
+            showStep('config');
+        }
+        
+        // 配置设备
+        function configDevice() {
+            const deviceName = document.getElementById('device-name-input').value;
+            const wifiName = document.getElementById('wifi-name-input').value;
+            const wifiPassword = document.getElementById('wifi-password-input').value;
+            
+            if (!deviceName || !wifiName || !wifiPassword) {
+                alert('请填写完整的配置信息');
+                return;
+            }
+            
+            showStep('connecting');
+            
+            // 模拟连接过程
+            let step = 1;
+            const steps = ['发送配置', '连接WiFi', '添加到云端'];
+            
+            const connectingInterval = setInterval(() => {
+                if (step <= 3) {
+                    // 更新进度点
+                    for (let i = 1; i <= 3; i++) {
+                        const dot = document.getElementById('dot' + i);
+                        if (i <= step) {
+                            dot.style.backgroundColor = '#007aff';
+                        } else {
+                            dot.style.backgroundColor = '#e5e5e5';
+                        }
+                    }
+                    
+                    document.getElementById('connecting-text').textContent = steps[step - 1];
+                    document.getElementById('connecting-status').textContent = '正在' + steps[step - 1] + '...';
+                    
+                    step++;
+                } else {
+                    clearInterval(connectingInterval);
+                    document.getElementById('success-text').textContent = deviceName + ' 添加成功！';
+                    showStep('success');
+                }
+            }, 2000);
+        }
+        
+        // 重新开始
+        function restart() {
+            isScanning = false;
+            document.getElementById('search-btn').disabled = false;
+            document.getElementById('search-btn').textContent = '开始搜索设备';
+            document.getElementById('search-progress').style.width = '0%';
+            document.getElementById('search-status').textContent = '点击开始搜索设备';
+            
+            // 停止雷达动画
+            document.querySelectorAll('.radar-circle').forEach(circle => {
+                circle.classList.remove('scanning');
+            });
+            
+            // 清空表单
+            document.getElementById('device-name-input').value = '';
+            document.getElementById('wifi-name-input').value = '';
+            document.getElementById('wifi-password-input').value = '';
+            
+            showStep('network');
+            checkNetwork();
+        }
+        
+        // 页面加载完成后开始网络检测
+        window.onload = function() {
+            checkNetwork();
+        };
+    </script>
+</body>
+</html>

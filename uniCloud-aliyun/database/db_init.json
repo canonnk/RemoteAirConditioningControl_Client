@@ -1,125 +1,251 @@
 {
-  "users": {
-    "data": [],
-    "index": [
-      {
-        "IndexName": "phone_index",
-        "MgoKeySchema": {
-          "MgoIndexKeys": [{
-            "Name": "phone",
-            "Direction": "1"
-          }],
-          "MgoIsUnique": true
-        }
-      }
-    ],
-    "schema": {
-      "bsonType": "object",
-      "required": ["phone", "createTime"],
-      "properties": {
-        "_id": {
-          "description": "ID，系统自动生成"
-        },
-        "phone": {
-          "bsonType": "string",
-          "description": "手机号",
-          "pattern": "^1[3-9]\\d{9}$",
-          "title": "手机号"
-        },
-        "openid": {
-          "bsonType": "string",
-          "description": "一键登录openid",
-          "title": "OpenID"
-        },
-        "createTime": {
-          "bsonType": "number",
-          "description": "创建时间戳",
-          "title": "创建时间"
-        },
-        "lastLoginTime": {
-          "bsonType": "number",
-          "description": "最后登录时间戳",
-          "title": "最后登录时间"
-        },
-        "loginType": {
-          "bsonType": "string",
-          "description": "登录类型：sms-验证码登录，oneclick-一键登录",
-          "enum": ["sms", "oneclick"],
-          "title": "登录类型"
-        }
-      }
-    }
-  },
-  "sms_codes": {
-    "data": [],
-    "index": [
-      {
-        "IndexName": "phone_code_index",
-        "MgoKeySchema": {
-          "MgoIndexKeys": [
-            {
-              "Name": "phone",
-              "Direction": "1"
-            },
-            {
-              "Name": "code",
-              "Direction": "1"
+  "collections": [
+    {
+      "collectionName": "devices",
+      "description": "设备信息表",
+      "schema": {
+        "bsonType": "object",
+        "required": ["deviceCode", "deviceType", "deviceName", "userId"],
+        "properties": {
+          "_id": {
+            "description": "设备ID"
+          },
+          "deviceCode": {
+            "bsonType": "string",
+            "description": "设备唯一码",
+            "pattern": "^[A-Z]{2}\\d{8}$"
+          },
+          "deviceType": {
+            "bsonType": "string",
+            "description": "设备类型",
+            "enum": ["智能灯", "智能插座", "智能开关", "环境监测仪", "智能空调", "智能音箱"]
+          },
+          "deviceName": {
+            "bsonType": "string",
+            "description": "设备名称",
+            "maxLength": 50
+          },
+          "userId": {
+            "bsonType": "string",
+            "description": "用户ID"
+          },
+          "userMobile": {
+            "bsonType": "string",
+            "description": "用户手机号"
+          },
+          "status": {
+            "bsonType": "string",
+            "description": "设备状态",
+            "enum": ["online", "offline", "error"],
+            "default": "offline"
+          },
+          "isEnabled": {
+            "bsonType": "bool",
+            "description": "是否启用",
+            "default": true
+          },
+          "settings": {
+            "bsonType": "object",
+            "description": "设备设置",
+            "properties": {
+              "autoMode": {
+                "bsonType": "bool",
+                "description": "自动模式"
+              },
+              "brightness": {
+                "bsonType": "int",
+                "description": "亮度",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "temperature": {
+                "bsonType": "int",
+                "description": "温度"
+              },
+              "notifications": {
+                "bsonType": "bool",
+                "description": "通知开关"
+              }
             }
-          ],
-          "MgoIsUnique": false
+          },
+          "statistics": {
+            "bsonType": "object",
+            "description": "设备统计",
+            "properties": {
+              "totalUsageTime": {
+                "bsonType": "int",
+                "description": "总使用时间(分钟)"
+              },
+              "energyConsumption": {
+                "bsonType": "double",
+                "description": "能耗(kWh)"
+              },
+              "lastActiveTime": {
+                "bsonType": "int",
+                "description": "最后活跃时间"
+              }
+            }
+          },
+          "createTime": {
+            "bsonType": "int",
+            "description": "创建时间"
+          },
+          "updateTime": {
+            "bsonType": "int",
+            "description": "更新时间"
+          }
         }
       },
-      {
-        "IndexName": "expireTime_index",
-        "MgoKeySchema": {
-          "MgoIndexKeys": [{
-            "Name": "expireTime",
-            "Direction": "1"
-          }],
-          "MgoIsUnique": false
+      "index": [
+        {
+          "IndexName": "deviceCode_unique",
+          "MgoKeySchema": {
+            "MgoIndexKeys": [
+              {
+                "Name": "deviceCode",
+                "Direction": "1"
+              }
+            ],
+            "MgoIsUnique": true
+          }
+        },
+        {
+          "IndexName": "userId_index",
+          "MgoKeySchema": {
+            "MgoIndexKeys": [
+              {
+                "Name": "userId",
+                "Direction": "1"
+              }
+            ]
+          }
+        },
+        {
+          "IndexName": "createTime_index",
+          "MgoKeySchema": {
+            "MgoIndexKeys": [
+              {
+                "Name": "createTime",
+                "Direction": "-1"
+              }
+            ]
+          }
         }
-      }
-    ],
-    "schema": {
-      "bsonType": "object",
-      "required": ["phone", "code", "expireTime", "createTime", "used"],
-      "properties": {
-        "_id": {
-          "description": "ID，系统自动生成"
-        },
-        "phone": {
-          "bsonType": "string",
-          "description": "手机号",
-          "pattern": "^1[3-9]\\d{9}$",
-          "title": "手机号"
-        },
-        "code": {
-          "bsonType": "string",
-          "description": "验证码",
-          "pattern": "^\\d{6}$",
-          "title": "验证码"
-        },
-        "expireTime": {
-          "bsonType": "number",
-          "description": "过期时间戳",
-          "title": "过期时间"
-        },
-        "createTime": {
-          "bsonType": "number",
-          "description": "创建时间戳",
-          "title": "创建时间"
-        },
-        "used": {
-          "bsonType": "bool",
-          "description": "是否已使用",
-          "title": "是否已使用"
-        },
-        "usedTime": {
-          "bsonType": "number",
-          "description": "使用时间戳",
-          "title": "使用时间"
+      ]
+    },
+    {
+      "collectionName": "user_device_stats",
+      "description": "用户设备统计表",
+      "schema": {
+        "bsonType": "object",
+        "required": ["userId", "totalDevices"],
+        "properties": {
+          "_id": {
+            "description": "统计ID"
+          },
+          "userId": {
+            "bsonType": "string",
+            "description": "用户ID"
+          },
+          "totalDevices": {
+            "bsonType": "int",
+            "description": "设备总数",
+            "minimum": 0
+          },
+          "deviceTypes": {
+            "bsonType": "object",
+            "description": "设备类型统计"
+          },
+          "createTime": {
+            "bsonType": "int",
+            "description": "创建时间"
+          },
+          "updateTime": {
+            "bsonType": "int",
+            "description": "更新时间"
+          }
         }
-      }
+      },
+      "index": [
+        {
+          "IndexName": "userId_unique",
+          "MgoKeySchema": {
+            "MgoIndexKeys": [
+              {
+                "Name": "userId",
+                "Direction": "1"
+              }
+            ],
+            "MgoIsUnique": true
+          }
+        }
+      ]
+    },
+    {
+      "collectionName": "device_operation_logs",
+      "description": "设备操作日志表",
+      "schema": {
+        "bsonType": "object",
+        "required": ["userId", "operation", "timestamp"],
+        "properties": {
+          "_id": {
+            "description": "日志ID"
+          },
+          "userId": {
+            "bsonType": "string",
+            "description": "用户ID"
+          },
+          "operation": {
+            "bsonType": "string",
+            "description": "操作类型",
+            "enum": ["add_device", "remove_device", "update_device", "control_device"]
+          },
+          "details": {
+            "bsonType": "object",
+            "description": "操作详情"
+          },
+          "timestamp": {
+            "bsonType": "int",
+            "description": "操作时间"
+          },
+          "ip": {
+            "bsonType": "string",
+            "description": "IP地址"
+          },
+          "userAgent": {
+            "bsonType": "string",
+            "description": "用户代理"
+          }
+        }
+      },
+      "index": [
+        {
+          "IndexName": "userId_timestamp_index",
+          "MgoKeySchema": {
+            "MgoIndexKeys": [
+              {
+                "Name": "userId",
+                "Direction": "1"
+              },
+              {
+                "Name": "timestamp",
+                "Direction": "-1"
+              }
+            ]
+          }
+        },
+        {
+          "IndexName": "timestamp_index",
+          "MgoKeySchema": {
+            "MgoIndexKeys": [
+              {
+                "Name": "timestamp",
+                "Direction": "-1"
+              }
+            ]
+          }
+        }
+      ]
     }
-  }
+  ]
 }

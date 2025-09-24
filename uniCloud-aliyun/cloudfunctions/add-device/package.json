@@ -1,0 +1,11 @@
+{
+  "name": "add-device",
+  "version": "1.0.0",
+  "description": "添加设备云函数",
+  "main": "index.js",
+  "dependencies": {
+    "uni-cloud-router": "^2.0.0"
+  },
+  "author": "",
+  "license": "ISC"
+}
