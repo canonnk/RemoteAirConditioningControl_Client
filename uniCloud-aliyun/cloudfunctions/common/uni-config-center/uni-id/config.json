@@ -1,6 +1,6 @@
 {
-  "passwordSecret": "your-password-secret-here",
-  "tokenSecret": "your-token-secret-here",
+  "passwordSecret": "your-password-secret-key",
+  "tokenSecret": "your-token-secret-key",
   "tokenExpiresIn": 7200,
   "tokenExpiresThreshold": 600,
   "passwordErrorLimit": 6,
@@ -9,9 +9,10 @@
   "forceInviteCode": false,
   "app": {
     "oauth": {
-      "weixin": {
-        "appid": "your-weixin-appid",
-        "appsecret": "your-weixin-appsecret"
+      "univerify": {
+        "appid": "your-univerify-appid",
+        "apiKey": "your-univerify-api-key",
+        "apiSecret": "your-univerify-api-secret"
       }
     }
   },
@@ -21,6 +22,11 @@
       "codeExpiresIn": 300,
       "smsKey": "your-sms-key",
       "smsSecret": "your-sms-secret"
+    },
+    "univerify": {
+      "appid": "your-univerify-appid",
+      "apiKey": "your-univerify-api-key", 
+      "apiSecret": "your-univerify-api-secret"
     }
   }
 }

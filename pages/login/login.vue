@@ -127,9 +127,9 @@ export default {
         
         uni.hideLoading();
         
-        if (result.result.code === 200) {
+        if (result.result.success && result.result.code === 200) {
           uni.showToast({
-            title: '验证码发送成功',
+            title: result.result.message,
             icon: 'success'
           });
           
@@ -198,13 +198,13 @@ export default {
         
         uni.hideLoading();
         
-        if (result.result.code === 200) {
+        if (result.result.success && result.result.code === 200) {
           // 保存登录信息
           auth.setToken(result.result.data.token);
           auth.setUserInfo(result.result.data);
           
           uni.showToast({
-            title: '登录成功',
+            title: result.result.message,
             icon: 'success'
           });
           
@@ -233,34 +233,91 @@ export default {
     // 一键登录
     async oneClickLogin() {
       try {
+        // 首先检查是否支持一键登录
+        const checkResult = await uni.checkLogin({
+          provider: 'univerify'
+        });
+        
+        if (!checkResult.isSupport) {
+          uni.showModal({
+            title: '提示',
+            content: '当前环境不支持一键登录，请使用验证码登录',
+            showCancel: false
+          });
+          return;
+        }
+        
+        uni.showLoading({
+          title: '预登录中...'
+        });
+        
+        // 预登录
+        const preLoginResult = await uni.preLogin({
+          provider: 'univerify'
+        });
+        
+        if (preLoginResult.errCode !== 0) {
+          uni.hideLoading();
+          console.error('预登录失败:', preLoginResult);
+          uni.showModal({
+            title: '提示', 
+            content: '预登录失败，请使用验证码登录',
+            showCancel: false
+          });
+          return;
+        }
+        
+        uni.hideLoading();
+        
+        // 显示一键登录界面
         uni.showLoading({
           title: '登录中...'
         });
         
-        // 调用uni-app的一键登录API
         const loginResult = await uni.login({
-          provider: 'univerify'
+          provider: 'univerify',
+          univerifyStyle: {
+            // 自定义一键登录界面样式
+            fullScreen: true,
+            backgroundColor: '#ffffff',
+            buttons: {
+              loginBtn: {
+                width: '750rpx',
+                height: '94rpx',
+                textColor: '#ffffff',
+                borderRadius: '10rpx',
+                backgroundColor: '#007aff'
+              }
+            },
+            privacyTerms: {
+              defaultCheckBoxState: true,
+              textColor: '#BBBBBB',
+              termsColor: '#5496E3',
+              prefix: '我已阅读并同意',
+              suffix: '并使用本机号码登录'
+            }
+          }
         });
         
         if (loginResult.errMsg === 'login:ok') {
-          // 调用云函数验证
+          // 调用云函数验证access_token并获取手机号
           const result = await uniCloud.callFunction({
             name: 'one-click-login',
             data: {
               access_token: loginResult.access_token,
-              openid: loginResult.openid
+              openid: loginResult.openid || ''
             }
           });
           
           uni.hideLoading();
           
-          if (result.result.code === 200) {
+          if (result.result.success && result.result.code === 200) {
             // 保存登录信息
             auth.setToken(result.result.data.token);
             auth.setUserInfo(result.result.data);
             
             uni.showToast({
-              title: '登录成功',
+              title: result.result.message,
               icon: 'success'
             });
             
@@ -278,19 +335,52 @@ export default {
           }
         } else {
           uni.hideLoading();
-          uni.showToast({
-            title: '一键登录取消',
-            icon: 'none'
-          });
+          
+          // 用户取消登录
+          if (loginResult.errCode === 30002) {
+            uni.showToast({
+              title: '用户取消登录',
+              icon: 'none'
+            });
+          } else {
+            console.error('一键登录失败:', loginResult);
+            uni.showToast({
+              title: '登录失败: ' + (loginResult.errMsg || '未知错误'),
+              icon: 'none'
+            });
+          }
         }
       } catch (error) {
         uni.hideLoading();
-        console.error('一键登录失败:', error);
+        console.error('一键登录异常:', error);
         
-        // 如果一键登录不可用，提示用户使用验证码登录
+        // 根据错误类型给出不同提示
+        let errorMessage = '一键登录失败';
+        if (error.errCode) {
+          switch (error.errCode) {
+            case 30001:
+              errorMessage = '一键登录服务初始化失败';
+              break;
+            case 30002:
+              errorMessage = '用户取消登录';
+              break;
+            case 30003:
+              errorMessage = '未开通一键登录服务';
+              break;
+            case 30004:
+              errorMessage = '应用未配置一键登录';
+              break;
+            case 30005:
+              errorMessage = '一键登录服务不可用';
+              break;
+            default:
+              errorMessage = `登录失败(${error.errCode})`;
+          }
+        }
+        
         uni.showModal({
           title: '提示',
-          content: '一键登录暂不可用，请使用验证码登录',
+          content: errorMessage + '，请使用验证码登录',
           showCancel: false
         });
       }

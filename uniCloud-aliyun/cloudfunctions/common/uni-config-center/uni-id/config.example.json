@@ -1,0 +1,52 @@
+{
+  "passwordSecret": "your-password-secret-key-change-this",
+  "tokenSecret": "your-token-secret-key-change-this", 
+  "tokenExpiresIn": 7200,
+  "tokenExpiresThreshold": 600,
+  "passwordErrorLimit": 6,
+  "passwordErrorRetryTime": 3600,
+  "autoSetInviteCode": false,
+  "forceInviteCode": false,
+  "app": {
+    "oauth": {
+      "univerify": {
+        "appid": "your-univerify-appid",
+        "apiKey": "your-univerify-api-key",
+        "apiSecret": "your-univerify-api-secret"
+      }
+    }
+  },
+  "service": {
+    "sms": {
+      "name": "your-sms-service-name",
+      "codeExpiresIn": 300,
+      "smsKey": "your-sms-key",
+      "smsSecret": "your-sms-secret",
+      "templates": {
+        "login": "SMS_LOGIN_TEMPLATE_ID",
+        "register": "SMS_REGISTER_TEMPLATE_ID", 
+        "reset_password": "SMS_RESET_PASSWORD_TEMPLATE_ID",
+        "bind_phone": "SMS_BIND_PHONE_TEMPLATE_ID"
+      }
+    },
+    "univerify": {
+      "appid": "your-univerify-appid",
+      "apiKey": "your-univerify-api-key",
+      "apiSecret": "your-univerify-api-secret"
+    }
+  },
+  "web": {
+    "weixin": {
+      "appid": "your-weixin-web-appid",
+      "appsecret": "your-weixin-web-appsecret"
+    }
+  },
+  "mp-weixin": {
+    "oauth": {
+      "weixin": {
+        "appid": "your-weixin-miniprogram-appid",
+        "appsecret": "your-weixin-miniprogram-appsecret"
+      }
+    }
+  }
+}

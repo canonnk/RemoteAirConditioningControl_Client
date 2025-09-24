@@ -1,0 +1,123 @@
+{
+  "collections": [
+    {
+      "collectionName": "uni-id-users",
+      "description": "用户信息表",
+      "indexes": [
+        {
+          "IndexName": "mobile",
+          "MgoKeySchema": {
+            "MgoIndexKeys": [
+              {
+                "Name": "mobile",
+                "Direction": "1"
+              }
+            ],
+            "MgoIsUnique": true
+          }
+        },
+        {
+          "IndexName": "username",
+          "MgoKeySchema": {
+            "MgoIndexKeys": [
+              {
+                "Name": "username", 
+                "Direction": "1"
+              }
+            ],
+            "MgoIsUnique": true
+          }
+        }
+      ]
+    },
+    {
+      "collectionName": "sms_codes",
+      "description": "短信验证码记录表",
+      "indexes": [
+        {
+          "IndexName": "phone_scene",
+          "MgoKeySchema": {
+            "MgoIndexKeys": [
+              {
+                "Name": "phone",
+                "Direction": "1"
+              },
+              {
+                "Name": "scene",
+                "Direction": "1"
+              }
+            ]
+          }
+        },
+        {
+          "IndexName": "createTime",
+          "MgoKeySchema": {
+            "MgoIndexKeys": [
+              {
+                "Name": "createTime",
+                "Direction": "1"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "collectionName": "login_logs",
+      "description": "登录日志表",
+      "indexes": [
+        {
+          "IndexName": "userId",
+          "MgoKeySchema": {
+            "MgoIndexKeys": [
+              {
+                "Name": "userId",
+                "Direction": "1"
+              }
+            ]
+          }
+        },
+        {
+          "IndexName": "loginTime",
+          "MgoKeySchema": {
+            "MgoIndexKeys": [
+              {
+                "Name": "loginTime",
+                "Direction": "-1"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "collectionName": "user_devices",
+      "description": "用户设备表",
+      "indexes": [
+        {
+          "IndexName": "userId",
+          "MgoKeySchema": {
+            "MgoIndexKeys": [
+              {
+                "Name": "userId",
+                "Direction": "1"
+              }
+            ]
+          }
+        },
+        {
+          "IndexName": "deviceCode",
+          "MgoKeySchema": {
+            "MgoIndexKeys": [
+              {
+                "Name": "deviceCode",
+                "Direction": "1"
+              }
+            ],
+            "MgoIsUnique": true
+          }
+        }
+      ]
+    }
+  ]
+}
