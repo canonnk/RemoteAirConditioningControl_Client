@@ -39,6 +39,9 @@ export default {
     // 设置导航栏样式
     this.setNavigationBarStyle(theme);
     
+    // 设置tabbar样式
+    this.setTabBarStyle(theme);
+    
     // 触发全局主题变更事件
     uni.$emit('themeChanged', theme === this.THEMES.DARK);
   },
@@ -61,12 +64,29 @@ export default {
   // 设置导航栏样式
   setNavigationBarStyle(theme) {
     const style = {
-      navigationBarTextStyle: theme === this.THEMES.DARK ? 'white' : 'black',
-      navigationBarBackgroundColor: theme === this.THEMES.DARK ? '#2d2d2d' : '#ffffff'
+      frontColor: theme === this.THEMES.DARK ? '#ffffff' : '#000000',
+      backgroundColor: theme === this.THEMES.DARK ? '#2d2d2d' : '#ffffff',
+	  animation: {
+	  	duration: 300,
+	  	timingFunc: 'easeIn'
+	  }
     };
     
     // 动态设置导航栏样式
     uni.setNavigationBarColor(style);
+  },
+  
+  // 设置tabbar样式
+  setTabBarStyle(theme) {
+    const tabBarStyle = {
+      color: theme === this.THEMES.DARK ? '#8e8e93' : '#7A7E83',
+      selectedColor: '#007aff',
+      backgroundColor: theme === this.THEMES.DARK ? '#1c1c1e' : '#ffffff',
+      borderStyle: theme === this.THEMES.DARK ? 'white' : 'black'
+    };
+    
+    // 动态设置tabbar样式
+    uni.setTabBarStyle(tabBarStyle);
   },
   
   // 初始化主题

@@ -190,6 +190,13 @@ export default {
     this.updateTime = this.getCurrentTime();
     this.generateSuggestions();
   },
+  onShow() {
+    // 每次页面显示时，都从全局状态同步并应用主题
+    const currentTheme = theme.getCurrentTheme();
+    this.isDarkMode = currentTheme === theme.THEMES.DARK;
+    theme.setNavigationBarStyle(currentTheme);
+    theme.setTabBarStyle(currentTheme);
+  },
   onUnload() {
     // 移除主题变化监听
     uni.$off('themeChanged', this.onThemeChanged);

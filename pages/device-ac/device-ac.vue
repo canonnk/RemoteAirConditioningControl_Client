@@ -1,153 +1,191 @@
 <template>
-  <view class="container" :class="{ 'dark-theme': isDarkMode }">
-    <!-- 设备状态卡片 -->
-    <view class="device-card">
-      <view class="device-header">
-        <view class="device-info">
-          <text class="device-name">{{ device.name }}</text>
-          <text class="device-room">{{ device.room }}</text>
+  <view class="remote-control" :class="{ 'is-off': !acState.power, 'dark-theme': isDarkMode }">
+    <!-- 顶部区域 -->
+    <view class="header">
+      <view class="brand-selector">
+        <view class="lang-switcher button" @click="switchLanguage">
+          <text>{{ currentLang === 'zh' ? 'EN' : '中' }}</text>
         </view>
-        <view class="device-switch" :class="{ 'on': device.isOn }" @click="toggleDevice">
-          <view class="switch-circle"></view>
+        <view class="selected-brand" @click="toggleBrandDropdown">
+          <text>{{ brands[selectedBrandIndex] }}</text>
+          <text class="dropdown-arrow">▼</text>
+        </view>
+        <view class="brand-dropdown" :class="{ 'open': showBrandDropdown }" v-if="showBrandDropdown">
+          <input class="brand-search" v-model="brandSearchText" :placeholder="t('searchPlaceholder')" />
+          <scroll-view class="brand-list" scroll-y>
+            <view class="brand-item" 
+                  v-for="(brand, index) in filteredBrands" 
+                  :key="brand"
+                  @click="selectBrand(index)">
+              <text>{{ brand }}</text>
+            </view>
+          </scroll-view>
         </view>
       </view>
       
-      <view class="device-status">
-        <text class="status-text">{{ getStatusText() }}</text>
+      <view class="power-button button" :class="{ 'on': acState.power }" @click="togglePower">
+        <view class="power-icon">
+          <text>⏻</text>
+        </view>
       </view>
     </view>
 
     <!-- 温度控制 -->
-    <view class="temp-control" v-if="device.isOn">
-      <view class="temp-display">
-        <text class="temp-value">{{ targetTemp }}°</text>
-        <text class="temp-label">目标温度</text>
+    <view class="temp-control">
+      <view class="button temp-btn" @click="decreaseTemp">
+        <text>▼</text>
       </view>
-      <view class="temp-buttons">
-        <view class="temp-btn" @click="decreaseTemp">
-          <text class="btn-text">-</text>
-        </view>
-        <view class="temp-btn" @click="increaseTemp">
-          <text class="btn-text">+</text>
-        </view>
+      <view class="temp-display">
+        <text v-if="acState.power">{{ acState.temperature }}<text class="temp-unit">°C</text></text>
+        <text v-else>OFF</text>
+      </view>
+      <view class="button temp-btn" @click="increaseTemp">
+        <text>▲</text>
       </view>
     </view>
 
     <!-- 模式选择 -->
-    <view class="control-section" v-if="device.isOn">
-      <view class="section-header">
-        <text class="section-title">运行模式</text>
+    <view class="mode-selection">
+      <view class="option-button" 
+            :class="{ 'active': acState.mode === 'cool' }" 
+            @click="setMode('cool')">
+        <text>❄️</text>
       </view>
-      <view class="mode-selector">
-        <view 
-          v-for="mode in modes" 
-          :key="mode.id"
-          class="mode-item"
-          :class="{ 'active': selectedMode === mode.id }"
-          @click="selectMode(mode)"
-        >
-          <text class="mode-icon">{{ mode.icon }}</text>
-          <text class="mode-name">{{ mode.name }}</text>
-        </view>
+      <view class="option-button" 
+            :class="{ 'active': acState.mode === 'heat' }" 
+            @click="setMode('heat')">
+        <text>☀️</text>
       </view>
-    </view>
-
-    <!-- 风速控制 -->
-    <view class="control-section" v-if="device.isOn">
-      <view class="section-header">
-        <text class="section-title">风速</text>
-        <text class="section-value">{{ getFanSpeedText() }}</text>
+      <view class="option-button" 
+            :class="{ 'active': acState.mode === 'dry' }" 
+            @click="setMode('dry')">
+        <text>💧</text>
       </view>
-      <view class="fan-speed-control">
-        <view 
-          v-for="(speed, index) in fanSpeeds" 
-          :key="index"
-          class="speed-item"
-          :class="{ 'active': fanSpeed === index }"
-          @click="setFanSpeed(index)"
-        >
-          <text class="speed-text">{{ speed }}</text>
-        </view>
+      <view class="option-button" 
+            :class="{ 'active': acState.mode === 'fan' }" 
+            @click="setMode('fan')">
+        <text>🌬️</text>
+      </view>
+      <view class="option-button" 
+            :class="{ 'active': acState.mode === 'auto' }" 
+            @click="setMode('auto')">
+        <text>Ⓐ</text>
       </view>
     </view>
 
-    <!-- 功能开关 -->
-    <view class="control-section" v-if="device.isOn">
-      <view class="section-header">
-        <text class="section-title">功能设置</text>
-      </view>
-      <view class="function-switches">
-        <view class="switch-item">
-          <text class="switch-label">摆风</text>
-          <switch 
-            :checked="swingEnabled" 
-            @change="toggleSwing"
-            color="#007aff"
-          />
-        </view>
-        <view class="switch-item">
-          <text class="switch-label">睡眠模式</text>
-          <switch 
-            :checked="sleepMode" 
-            @change="toggleSleepMode"
-            color="#007aff"
-          />
-        </view>
-        <view class="switch-item">
-          <text class="switch-label">节能模式</text>
-          <switch 
-            :checked="ecoMode" 
-            @change="toggleEcoMode"
-            color="#007aff"
-          />
+    <!-- 选项网格 -->
+    <view class="options-grid">
+      <view class="option-row">
+        <text class="option-label">{{ t('fanSpeed') }}</text>
+        <view class="option-buttons">
+          <view class="option-button" 
+                :class="{ 'active': acState.fanSpeed === 'auto' }" 
+                @click="setFanSpeed('auto')">
+            <text>{{ t('auto') }}</text>
+          </view>
+          <view class="option-button" 
+                :class="{ 'active': acState.fanSpeed === 'low' }" 
+                @click="setFanSpeed('low')">
+            <text>{{ t('low') }}</text>
+          </view>
+          <view class="option-button" 
+                :class="{ 'active': acState.fanSpeed === 'med' }" 
+                @click="setFanSpeed('med')">
+            <text>{{ t('med') }}</text>
+          </view>
+          <view class="option-button" 
+                :class="{ 'active': acState.fanSpeed === 'high' }" 
+                @click="setFanSpeed('high')">
+            <text>{{ t('high') }}</text>
+          </view>
         </view>
       </view>
-    </view>
 
-    <!-- 定时设置 -->
-    <view class="control-section">
-      <view class="section-header">
-        <text class="section-title">定时关机</text>
-        <switch 
-          :checked="timerEnabled" 
-          @change="toggleTimer"
-          color="#007aff"
-        />
+      <view class="option-row">
+        <text class="option-label">{{ t('swingV') }}</text>
+        <view class="option-buttons">
+          <view class="option-button" 
+                :class="{ 'active': acState.vSwing === 'off' }" 
+                @click="setVSwing('off')">
+            <text>{{ t('off') }}</text>
+          </view>
+          <view class="option-button" 
+                :class="{ 'active': acState.vSwing === 'up' }" 
+                @click="setVSwing('up')">
+            <text>{{ t('up') }}</text>
+          </view>
+          <view class="option-button" 
+                :class="{ 'active': acState.vSwing === 'mid' }" 
+                @click="setVSwing('mid')">
+            <text>{{ t('mid') }}</text>
+          </view>
+          <view class="option-button" 
+                :class="{ 'active': acState.vSwing === 'down' }" 
+                @click="setVSwing('down')">
+            <text>{{ t('down') }}</text>
+          </view>
+        </view>
       </view>
-      <view v-if="timerEnabled" class="timer-settings">
-        <view class="timer-options">
-          <view 
-            v-for="time in timerOptions" 
-            :key="time"
-            class="timer-option"
-            :class="{ 'active': selectedTimer === time }"
-            @click="setTimer(time)"
-          >
-            <text class="timer-text">{{ time }}分钟</text>
+
+      <view class="option-row">
+        <text class="option-label">{{ t('swingH') }}</text>
+        <view class="option-buttons">
+          <view class="option-button" 
+                :class="{ 'active': acState.hSwing === 'auto' }" 
+                @click="setHSwing('auto')">
+            <text>{{ t('auto') }}</text>
+          </view>
+          <view class="option-button" 
+                :class="{ 'active': acState.hSwing === 'mid' }" 
+                @click="setHSwing('mid')">
+            <text>{{ t('mid') }}</text>
+          </view>
+          <view class="option-button" 
+                :class="{ 'active': acState.hSwing === 'off' }" 
+                @click="setHSwing('off')">
+            <text>{{ t('off') }}</text>
           </view>
         </view>
       </view>
     </view>
 
-    <!-- 环境信息 -->
-    <view class="control-section">
-      <view class="section-header">
-        <text class="section-title">环境信息</text>
+    <!-- 高级功能 -->
+    <view class="advanced-features">
+      <view class="option-button" 
+            :class="{ 'active': acState.boost }" 
+            @click="toggleBoost">
+        <text>🚀 {{ t('boost') }}</text>
       </view>
-      <view class="environment-info">
-        <view class="env-item">
-          <text class="env-label">室内温度</text>
-          <text class="env-value">{{ currentTemp }}°C</text>
-        </view>
-        <view class="env-item">
-          <text class="env-label">湿度</text>
-          <text class="env-value">{{ humidity }}%</text>
-        </view>
-        <view class="env-item">
-          <text class="env-label">空气质量</text>
-          <text class="env-value">{{ airQuality }}</text>
-        </view>
+      <view class="option-button" 
+            :class="{ 'active': acState.light }" 
+            @click="toggleLight">
+        <text>💡 {{ t('light') }}</text>
       </view>
+      <view class="option-button" 
+            :class="{ 'active': acState.xFan }" 
+            @click="toggleXFan">
+        <text>🍃 {{ t('xFan') }}</text>
+      </view>
+      <view class="option-button" 
+            :class="{ 'active': acState.sleep }" 
+            @click="toggleSleep">
+        <text>🌙 {{ t('sleep') }}</text>
+      </view>
+      <view class="option-button" 
+            :class="{ 'active': acState.quiet }" 
+            @click="toggleQuiet">
+        <text>🤫 {{ t('quiet') }}</text>
+      </view>
+      <view class="option-button" 
+            :class="{ 'active': acState.econo }" 
+            @click="toggleEcono">
+        <text>🌿 {{ t('econo') }}</text>
+      </view>
+      <!-- <view class="option-button" 
+            :class="{ 'active': acState.timer > 0 }" 
+            @click="setTimer">
+        <text>⏱️ {{ t('timer') }}</text>
+      </view> -->
     </view>
   </view>
 </template>
@@ -159,202 +197,327 @@ export default {
   data() {
     return {
       isDarkMode: false,
-      deviceId: null,
-      device: {
-        id: 9,
-        name: '空调',
-        room: '卧室',
-        isOn: true
+      currentLang: 'zh',
+      showBrandDropdown: false,
+      brandSearchText: '',
+      selectedBrandIndex: 0,
+      brands: ["GREE", "Midea", "Haier", "Hisense", "TCL", "AUX", "Panasonic", "Daikin", "Mitsubishi", "LG", "Samsung", "CHIGO", "YORK"],
+      
+      // 空调状态
+      acState: {
+        brand: 'GREE',
+        power: true,
+        mode: 'cool',
+        temperature: 24,
+        fanSpeed: 'auto',
+        vSwing: 'off', // off, up, mid, down
+        hSwing: 'off',
+        boost: false,
+        light: false,
+        xFan: false,
+        sleep: false,
+        quiet: false,
+        econo: false,
+        timer: 0
       },
-      targetTemp: 26,
-      selectedMode: 'cool',
-      fanSpeed: 1,
-      swingEnabled: false,
-      sleepMode: false,
-      ecoMode: true,
-      timerEnabled: false,
-      selectedTimer: 30,
-      currentTemp: 28,
-      humidity: 65,
-      airQuality: '良好',
-      modes: [
-        { id: 'cool', name: '制冷', icon: '❄️' },
-        { id: 'heat', name: '制热', icon: '🔥' },
-        { id: 'dry', name: '除湿', icon: '💧' },
-        { id: 'fan', name: '送风', icon: '🌀' },
-        { id: 'auto', name: '自动', icon: '🤖' }
-      ],
-      fanSpeeds: ['自动', '低速', '中速', '高速'],
-      timerOptions: [30, 60, 90, 120, 180, 240]
+      
+      // 翻译字典
+      translations: {
+        en: {
+          fanSpeed: "Fan Speed",
+          swingV: "Swing V", 
+          swingH: "Swing H",
+          auto: "Auto",
+          low: "Low",
+          med: "Med", 
+          high: "High",
+          mid: "Mid",
+          off: "Off",
+          up: "Up",
+          down: "Down",
+          boost: "Boost",
+          light: "Light", 
+          xFan: "X-Fan",
+          sleep: "Sleep",
+          quiet: "Quiet",
+          econo: "Econo",
+          timer: "Timer",
+          searchPlaceholder: "Search Brands..."
+        },
+        zh: {
+          fanSpeed: "风速",
+          swingV: "上下扫风",
+          swingH: "左右扫风", 
+          auto: "自动",
+          low: "低",
+          med: "中",
+          high: "高",
+          mid: "中", 
+          off: "关",
+          up: "上",
+          down: "下",
+          boost: "强力",
+          light: "灯光",
+          xFan: "干燥", 
+          sleep: "睡眠",
+          quiet: "静音",
+          econo: "节能",
+          timer: "定时",
+          searchPlaceholder: "搜索品牌..."
+        }
+      }
     };
   },
-  onLoad(options) {
-    if (options.id) {
-      this.deviceId = options.id;
-      this.loadDeviceData();
+  
+  computed: {
+    filteredBrands() {
+      if (!this.brandSearchText) {
+        return this.brands;
+      }
+      return this.brands.filter(brand => 
+        brand.toLowerCase().includes(this.brandSearchText.toLowerCase())
+      );
     }
-    
+  },
+  
+  onLoad(options) {
     // 初始化主题状态
     this.isDarkMode = theme.isDarkMode();
     
     // 监听主题变化
     uni.$on('themeChanged', this.onThemeChanged);
+    
+    // 从本地存储加载语言设置
+    const savedLang = uni.getStorageSync('acRemoteLang');
+    if (savedLang) {
+      this.currentLang = savedLang;
+    }
   },
+  
+  onShow() {
+    // 每次页面显示时，都从全局状态同步并应用主题
+    const currentTheme = theme.getCurrentTheme();
+    this.isDarkMode = currentTheme === theme.THEMES.DARK;
+    theme.setNavigationBarStyle(currentTheme);
+    theme.setTabBarStyle(currentTheme);
+  },
+  
   onUnload() {
     // 移除主题变化监听
     uni.$off('themeChanged', this.onThemeChanged);
   },
+  
   methods: {
+    // 翻译方法
+    t(key) {
+      return this.translations[this.currentLang][key] || key;
+    },
+    
     // 主题变化回调
     onThemeChanged(isDark) {
       this.isDarkMode = isDark;
     },
     
-    // 加载设备数据
-    loadDeviceData() {
-      console.log('加载空调数据:', this.deviceId);
+    // 切换语言
+    switchLanguage() {
+      this.currentLang = this.currentLang === 'zh' ? 'en' : 'zh';
+      uni.setStorageSync('acRemoteLang', this.currentLang);
     },
     
-    // 获取状态文本
-    getStatusText() {
-      if (!this.device.isOn) return '已关闭';
-      
-      const modeText = this.modes.find(m => m.id === this.selectedMode)?.name || '制冷';
-      return `${modeText}模式 · ${this.targetTemp}°C`;
+    // 切换品牌下拉框
+    toggleBrandDropdown() {
+      this.showBrandDropdown = !this.showBrandDropdown;
     },
     
-    // 获取风速文本
-    getFanSpeedText() {
-      return this.fanSpeeds[this.fanSpeed];
-    },
-    
-    // 切换设备开关
-    toggleDevice() {
-      this.device.isOn = !this.device.isOn;
+    // 选择品牌
+    selectBrand(index) {
+      const originalIndex = this.brands.indexOf(this.filteredBrands[index]);
+      this.selectedBrandIndex = originalIndex;
+      this.acState.brand = this.brands[originalIndex];
+      this.showBrandDropdown = false;
+      this.brandSearchText = '';
       
       uni.showToast({
-        title: this.device.isOn ? '空调已开启' : '空调已关闭',
+        title: `已切换到${this.acState.brand}`,
         icon: 'success'
       });
       
-      this.updateDeviceStatus();
+      this.sendCommand();
+    },
+    
+    // 切换电源
+    togglePower() {
+      this.acState.power = !this.acState.power;
+      this.sendCommand();
+      this.updateUI();
     },
     
     // 增加温度
     increaseTemp() {
-      if (this.targetTemp < 30) {
-        this.targetTemp++;
-        this.updateDeviceSettings();
+      if (this.acState.power && this.acState.temperature < 30) {
+        this.acState.temperature++;
+        this.sendCommand();
       }
     },
     
     // 降低温度
     decreaseTemp() {
-      if (this.targetTemp > 16) {
-        this.targetTemp--;
-        this.updateDeviceSettings();
+      if (this.acState.power && this.acState.temperature > 16) {
+        this.acState.temperature--;
+        this.sendCommand();
       }
     },
     
-    // 选择模式
-    selectMode(mode) {
-      this.selectedMode = mode.id;
-      
-      // 根据模式调整默认温度
-      switch(mode.id) {
-        case 'cool':
-          if (this.targetTemp > 26) this.targetTemp = 26;
-          break;
-        case 'heat':
-          if (this.targetTemp < 20) this.targetTemp = 20;
-          break;
+    // 设置模式
+    setMode(mode) {
+      if (this.acState.power) {
+        this.acState.mode = mode;
+        this.sendCommand();
       }
-      
-      this.updateDeviceSettings();
-      
-      uni.showToast({
-        title: `已切换到${mode.name}模式`,
-        icon: 'success'
-      });
     },
     
     // 设置风速
     setFanSpeed(speed) {
-      this.fanSpeed = speed;
-      this.updateDeviceSettings();
+      if (this.acState.power) {
+        this.acState.fanSpeed = speed;
+        this.sendCommand();
+      }
     },
     
-    // 切换摆风
-    toggleSwing(e) {
-      this.swingEnabled = e.detail.value;
-      this.updateDeviceSettings();
+    // 设置上下扫风
+    setVSwing(swing) {
+      if (this.acState.power) {
+        this.acState.vSwing = swing;
+        this.sendCommand();
+      }
+    },
+    
+    // 设置左右扫风
+    setHSwing(swing) {
+      if (this.acState.power) {
+        this.acState.hSwing = swing;
+        this.sendCommand();
+      }
+    },
+    
+    // 切换强力模式
+    toggleBoost() {
+      if (this.acState.power) {
+        this.acState.boost = !this.acState.boost;
+        this.sendCommand();
+      }
+    },
+    
+    // 切换灯光
+    toggleLight() {
+      this.acState.light = !this.acState.light;
+      this.sendCommand();
+    },
+    
+    // 切换干燥模式
+    toggleXFan() {
+      if (this.acState.power) {
+        this.acState.xFan = !this.acState.xFan;
+        this.sendCommand();
+      }
     },
     
     // 切换睡眠模式
-    toggleSleepMode(e) {
-      this.sleepMode = e.detail.value;
-      
-      if (this.sleepMode) {
-        // 睡眠模式下自动调整设置
-        this.fanSpeed = 0; // 自动风速
-        this.swingEnabled = false;
+    toggleSleep() {
+      if (this.acState.power) {
+        this.acState.sleep = !this.acState.sleep;
+        this.sendCommand();
       }
-      
-      this.updateDeviceSettings();
+    },
+    
+    // 切换静音模式
+    toggleQuiet() {
+      if (this.acState.power) {
+        this.acState.quiet = !this.acState.quiet;
+        this.sendCommand();
+      }
     },
     
     // 切换节能模式
-    toggleEcoMode(e) {
-      this.ecoMode = e.detail.value;
-      this.updateDeviceSettings();
-    },
-    
-    // 切换定时器
-    toggleTimer(e) {
-      this.timerEnabled = e.detail.value;
-      
-      if (!this.timerEnabled) {
-        this.selectedTimer = 30;
-      }
-      
-      this.updateDeviceSettings();
-    },
-    
-    // 设置定时器
-    setTimer(minutes) {
-      this.selectedTimer = minutes;
-      this.updateDeviceSettings();
-      
-      uni.showToast({
-        title: `定时${minutes}分钟后关机`,
-        icon: 'success'
-      });
-    },
-    
-    // 更新设备状态
-    async updateDeviceStatus() {
-      try {
-        console.log('更新空调状态:', this.device);
-      } catch (error) {
-        console.error('更新空调状态失败:', error);
+    toggleEcono() {
+      if (this.acState.power) {
+        this.acState.econo = !this.acState.econo;
+        this.sendCommand();
       }
     },
     
-    // 更新设备设置
-    async updateDeviceSettings() {
-      try {
-        console.log('更新空调设置:', {
-          targetTemp: this.targetTemp,
-          selectedMode: this.selectedMode,
-          fanSpeed: this.fanSpeed,
-          swingEnabled: this.swingEnabled,
-          sleepMode: this.sleepMode,
-          ecoMode: this.ecoMode,
-          timerEnabled: this.timerEnabled,
-          selectedTimer: this.selectedTimer
+    // 设置定时
+    setTimer() {
+      if (this.acState.power) {
+        uni.showModal({
+          title: this.t('timer'),
+          content: this.currentLang === 'zh' ? '设置定时分钟 (0-1440, 输入0取消)' : 'Set timer minutes (0-1440, 0 to cancel)',
+          editable: true,
+          placeholderText: this.acState.timer.toString(),
+          success: (res) => {
+            if (res.confirm) {
+              const minutes = parseInt(res.content);
+              if (!isNaN(minutes) && minutes >= 0 && minutes <= 1440) {
+                this.acState.timer = minutes;
+                this.sendCommand();
+              } else {
+                uni.showToast({
+                  title: this.currentLang === 'zh' ? '请输入0到1440之间的数字！' : 'Please enter a number between 0 and 1440!',
+                  icon: 'none'
+                });
+              }
+            }
+          }
         });
+      }
+    },
+    
+    // 更新UI状态
+    updateUI() {
+      // UI状态已通过数据绑定自动更新
+    },
+    
+    // 发送命令
+    async sendCommand() {
+      // 构建命令字符串
+      const modeMap = { cool: '01', heat: '04', dry: '02', fan: '03', auto: '00' };
+      const fanMap = { auto: '0', low: '1', med: '2', high: '3' };
+      const vSwingMap = { off: '00', up: '01', mid: '02', down: '03' };
+      const hSwingMap = { auto: '01', mid: '04', off: '00' };
+      
+      const command = 
+        (this.acState.power ? '1' : '0') +
+        (modeMap[this.acState.mode] || '01').padStart(2, '0') +
+        this.acState.temperature.toString().padStart(2, '0') +
+        (fanMap[this.acState.fanSpeed] || '0') +
+        (vSwingMap[this.acState.vSwing] || '00').padStart(2, '0') +
+        (hSwingMap[this.acState.hSwing] || '00').padStart(2, '0') +
+        (this.acState.boost ? '1' : '0') +
+        (this.acState.light ? '1' : '0') +
+        (this.acState.xFan ? '1' : '0') +
+        (this.acState.sleep ? '1' : '0') +
+        (this.acState.quiet ? '1' : '0') +
+        (this.acState.econo ? '1' : '0') +
+        this.acState.timer.toString().padStart(4, '0') +
+        '--';
+      
+      console.log("准备发送指令:", command);
+      
+      try {
+        // 这里可以调用实际的API发送命令
+        // const response = await uni.request({
+        //   url: 'https://myhome.cn/device/xxxx/sendCommmand',
+        //   method: 'POST',
+        //   data: { command: command }
+        // });
+        
+        console.log('指令发送成功:', command);
       } catch (error) {
-        console.error('更新空调设置失败:', error);
+        console.error('指令发送失败:', error);
+        uni.showToast({
+          title: `指令发送失败: ${error.message}`,
+          icon: 'none'
+        });
       }
     }
   }
@@ -362,347 +525,379 @@ export default {
 </script>
 
 <style scoped>
-.container {
-  background-color: #f8f9fa;
+/* CSS变量定义 */
+.remote-control {
+  --bg-dark: #2c3e50;
+  --bg-panel: #34495e;
+  --bg-dropdown: #46627f;
+  --text-primary: #ecf0f1;
+  --text-secondary: #95a5a6;
+  --accent-blue: #3498db;
+  --color-on: #2ecc71;
+  --color-off: #e74c3c;
+}
+
+/* 浅色主题 */
+.remote-control:not(.dark-theme) {
+  --bg-dark: #f8f9fa;
+  --bg-panel: #ffffff;
+  --bg-dropdown: #e9ecef;
+  --text-primary: #212529;
+  --text-secondary: #6c757d;
+  --accent-blue: #007bff;
+  --color-on: #28a745;
+  --color-off: #dc3545;
+}
+
+/* 深色主题 */
+.remote-control.dark-theme {
+  --bg-dark: #1a202c;
+  --bg-panel: #2d3748;
+  --bg-dropdown: #4a5568;
+}
+
+/* 主容器 */
+.remote-control {
+  width: 100%;
   min-height: 100vh;
-  padding: 20px;
-  transition: all 0.3s ease;
-}
-
-.container.dark-theme {
-  background-color: #000000;
-}
-
-.device-card {
-  background-color: #fff;
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.dark-theme .device-card {
-  background-color: #1a1a1a;
-}
-
-.device-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
-}
-
-.device-name {
-  font-size: 20px;
-  font-weight: bold;
-  color: #333;
-  display: block;
-  margin-bottom: 5px;
-}
-
-.dark-theme .device-name {
-  color: #fff;
-}
-
-.device-room {
-  font-size: 14px;
-  color: #999;
-}
-
-.device-switch {
-  width: 50px;
-  height: 30px;
-  background-color: #e5e5e5;
-  border-radius: 15px;
-  display: flex;
-  align-items: center;
-  padding: 2px;
-  transition: all 0.3s ease;
-}
-
-.device-switch.on {
-  background-color: #007aff;
-}
-
-.switch-circle {
-  width: 26px;
-  height: 26px;
-  background-color: #fff;
-  border-radius: 13px;
-  transition: all 0.3s ease;
-}
-
-.device-switch.on .switch-circle {
-  transform: translateX(20px);
-}
-
-.status-text {
-  font-size: 16px;
-  color: #666;
-}
-
-.dark-theme .status-text {
-  color: #ccc;
-}
-
-.temp-control {
-  background-color: #fff;
-  border-radius: 12px;
-  padding: 30px;
-  margin-bottom: 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.dark-theme .temp-control {
-  background-color: #1a1a1a;
-}
-
-.temp-display {
-  text-align: center;
-}
-
-.temp-value {
-  font-size: 48px;
-  font-weight: bold;
-  color: #007aff;
-  display: block;
-}
-
-.temp-label {
-  font-size: 14px;
-  color: #999;
-  margin-top: 5px;
-}
-
-.temp-buttons {
+  background-color: var(--bg-panel);
+  box-sizing: border-box;
+  padding: 30rpx 30rpx 50rpx 30rpx;
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  justify-content: flex-start;
+  gap: 64rpx;
+  font-family: 'Roboto', sans-serif;
+  color: var(--text-primary);
 }
 
-.temp-btn {
-  width: 50px;
-  height: 50px;
-  background-color: #f8f9fa;
-  border-radius: 25px;
+/* 按钮基础样式 */
+.button, .option-button {
+  background-color: var(--bg-dark);
+  border: none;
+  color: var(--text-secondary);
+  border-radius: 20rpx;
+  padding: 18rpx;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 24rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid #e5e5e5;
+  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.1);
 }
 
-.dark-theme .temp-btn {
-  background-color: #2d2d2d;
-  border-color: #404040;
+.button:active, .option-button:active {
+  transform: scale(0.95);
 }
 
-.btn-text {
-  font-size: 24px;
-  font-weight: bold;
-  color: #333;
+.option-button.active {
+  background-color: var(--accent-blue);
+  color: white;
+  box-shadow: 0 4rpx 16rpx rgba(52, 152, 219, 0.4);
+  transform: translateY(-1rpx);
 }
 
-.dark-theme .btn-text {
-  color: #fff;
+/* 关机状态下禁用按钮 */
+.remote-control.is-off .button:not(.power-button):not(.lang-switcher),
+.remote-control.is-off .option-button {
+  opacity: 0.6;
+  pointer-events: none;
 }
 
-.control-section {
-  background-color: #fff;
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 15px;
-}
-
-.dark-theme .control-section {
-  background-color: #1a1a1a;
-}
-
-.section-header {
+/* 顶部区域 */
+.header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
 }
 
-.section-title {
-  font-size: 16px;
+.brand-selector {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  background-color: var(--bg-dark);
+  border-radius: 20rpx;
+  padding-right: 20rpx;
+}
+
+.lang-switcher {
+  font-size: 20rpx;
+  padding: 12rpx 16rpx;
+  border-top-left-radius: 20rpx;
+  border-bottom-left-radius: 20rpx;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.selected-brand {
+  font-size: 28rpx;
   font-weight: bold;
-  color: #333;
-}
-
-.dark-theme .section-title {
-  color: #fff;
-}
-
-.section-value {
-  font-size: 14px;
-  color: #007aff;
-}
-
-.mode-selector {
+  cursor: pointer;
   display: flex;
-  gap: 10px;
+  align-items: center;
+  gap: 8rpx;
 }
 
-.mode-item {
-  flex: 1;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  padding: 15px 10px;
-  text-align: center;
-  border: 2px solid transparent;
-  transition: all 0.3s ease;
+.dropdown-arrow {
+  font-size: 16rpx;
+  opacity: 0.7;
 }
 
-.dark-theme .mode-item {
-  background-color: #2d2d2d;
+.brand-dropdown {
+  position: absolute;
+  top: calc(100% + 8rpx);
+  left: 0;
+  width: 300rpx;
+  background-color: var(--bg-dropdown);
+  border-radius: 20rpx;
+  box-shadow: 0 8rpx 16rpx rgba(0,0,0,0.3);
+  z-index: 100;
+  overflow: hidden;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(-10rpx);
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0s 0.2s;
 }
 
-.mode-item.active {
-  border-color: #007aff;
-  background-color: #e3f2fd;
+.brand-dropdown.open {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
-.dark-theme .mode-item.active {
-  background-color: #1a365d;
+.brand-search {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 16rpx;
+  border: none;
+  background-color: rgba(0,0,0,0.2);
+  color: var(--text-primary);
+  font-size: 20rpx;
 }
 
-.mode-icon {
-  font-size: 20px;
-  display: block;
-  margin-bottom: 5px;
+.brand-search:focus {
+  outline: none;
+  background-color: rgba(0,0,0,0.3);
 }
 
-.mode-name {
-  font-size: 12px;
-  color: #333;
+.brand-list {
+  max-height: 300rpx;
 }
 
-.dark-theme .mode-name {
-  color: #fff;
+.brand-item {
+  padding: 16rpx 20rpx;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-size: 20rpx;
 }
 
-.fan-speed-control {
+.brand-item:hover {
+  background-color: var(--accent-blue);
+}
+
+/* 电源按钮 */
+.power-button {
+  background: none;
+  padding: 12rpx;
+  border-radius: 50%;
+}
+
+.power-icon {
+  width: 40rpx;
+  height: 40rpx;
+  color: var(--color-off);
+  transition: color 0.3s;
+  font-size: 40rpx;
+}
+
+.power-button.on .power-icon {
+  color: var(--color-on);
+}
+
+/* 温度控制 */
+.temp-control {
   display: flex;
-  gap: 10px;
+  justify-content: center;
+  align-items: center;
+  gap: 25rpx;
+  flex-shrink: 0;
+  margin: 8rpx 0;
 }
 
-.speed-item {
-  flex: 1;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  padding: 12px;
+.temp-display {
+  font-size: 80rpx;
+  font-weight: 300;
+  width: 200rpx;
   text-align: center;
-  border: 2px solid transparent;
-  transition: all 0.3s ease;
+  color: var(--text-primary);
 }
 
-.dark-theme .speed-item {
-  background-color: #2d2d2d;
+.temp-unit {
+  font-size: 32rpx;
 }
 
-.speed-item.active {
-  border-color: #007aff;
-  background-color: #e3f2fd;
+.temp-btn {
+  font-size: 36rpx;
+  color: var(--text-primary);
+  border-radius: 50%;
+  width: 70rpx;
+  height: 70rpx;
 }
 
-.dark-theme .speed-item.active {
-  background-color: #1a365d;
+/* 模式选择 */
+.mode-selection {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12rpx;
+  margin: 8rpx 0;
 }
 
-.speed-text {
-  font-size: 14px;
-  color: #333;
+.mode-selection .option-button {
+  padding: 22rpx 10rpx;
+  font-size: 28rpx;
 }
 
-.dark-theme .speed-text {
-  color: #fff;
-}
-
-.function-switches {
+/* 选项网格 */
+.options-grid {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 10rpx;
+  margin: 12rpx 0;
 }
 
-.switch-item {
+.option-row {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 12rpx;
 }
 
-.switch-label {
-  font-size: 14px;
-  color: #333;
+.option-label {
+  width: 100rpx;
+  text-align: right;
+  font-size: 20rpx;
+  color: var(--text-secondary);
+  flex-shrink: 0;
 }
 
-.dark-theme .switch-label {
-  color: #fff;
-}
-
-.timer-options {
+.option-buttons {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 15px;
+  gap: 10rpx;
+  flex-grow: 1;
 }
 
-.timer-option {
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  padding: 10px 15px;
-  border: 2px solid transparent;
-  transition: all 0.3s ease;
+.option-buttons .option-button {
+  flex-grow: 1;
+  font-size: 18rpx;
+  padding: 14rpx 8rpx;
 }
 
-.dark-theme .timer-option {
-  background-color: #2d2d2d;
+/* 高级功能 */
+.advanced-features {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12rpx;
+  margin-top: 12rpx;
 }
 
-.timer-option.active {
-  border-color: #007aff;
-  background-color: #e3f2fd;
+.advanced-features .option-button {
+  font-size: 20rpx;
+  padding: 16rpx 8rpx;
 }
 
-.dark-theme .timer-option.active {
-  background-color: #1a365d;
+/* 响应式设计 */
+@media screen and (max-width: 750rpx) {
+  .remote-control {
+    padding: 25rpx 20rpx 40rpx 20rpx;
+    gap: 12rpx;
+  }
+  
+  .temp-display {
+    font-size: 70rpx;
+    width: 180rpx;
+  }
+  
+  .temp-control {
+    gap: 20rpx;
+    margin: 6rpx 0;
+  }
+  
+  .mode-selection {
+    gap: 10rpx;
+    margin: 6rpx 0;
+  }
+  
+  .mode-selection .option-button {
+    padding: 18rpx 8rpx;
+    font-size: 24rpx;
+  }
+  
+  .options-grid {
+    gap: 8rpx;
+    margin: 10rpx 0;
+  }
+  
+  .option-row {
+    gap: 10rpx;
+  }
+  
+  .advanced-features {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10rpx;
+    margin-top: 10rpx;
+  }
 }
 
-.timer-text {
-  font-size: 14px;
-  color: #333;
-}
-
-.dark-theme .timer-text {
-  color: #fff;
-}
-
-.environment-info {
-  display: flex;
-  justify-content: space-between;
-}
-
-.env-item {
-  text-align: center;
-  flex: 1;
-}
-
-.env-label {
-  font-size: 12px;
-  color: #999;
-  display: block;
-  margin-bottom: 5px;
-}
-
-.env-value {
-  font-size: 16px;
-  font-weight: bold;
-  color: #333;
-}
-
-.dark-theme .env-value {
-  color: #fff;
+@media screen and (max-height: 1334rpx) {
+  .remote-control {
+    padding: 20rpx 15rpx 30rpx 15rpx;
+    gap: 10rpx;
+  }
+  
+  .temp-display {
+    font-size: 60rpx;
+    width: 160rpx;
+  }
+  
+  .temp-control {
+    gap: 18rpx;
+    margin: 4rpx 0;
+  }
+  
+  .mode-selection {
+    gap: 8rpx;
+    margin: 4rpx 0;
+  }
+  
+  .mode-selection .option-button {
+    padding: 16rpx 6rpx;
+    font-size: 20rpx;
+  }
+  
+  .options-grid {
+    gap: 6rpx;
+    margin: 8rpx 0;
+  }
+  
+  .option-row {
+    gap: 8rpx;
+  }
+  
+  .option-buttons .option-button {
+    font-size: 16rpx;
+    padding: 12rpx 6rpx;
+  }
+  
+  .advanced-features {
+    gap: 8rpx;
+    margin-top: 8rpx;
+  }
+  
+  .advanced-features .option-button {
+    font-size: 16rpx;
+    padding: 12rpx 6rpx;
+  }
 }
 </style>

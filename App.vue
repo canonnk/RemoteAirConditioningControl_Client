@@ -18,6 +18,9 @@ export default {
 		
 		// 每次应用显示时检查登录状态
 		this.checkLoginStatus();
+		
+		// 确保主题样式正确应用（包括tabbar）
+		theme.applyTheme(theme.getCurrentTheme());
 	},
 	onHide: function() {
 		console.log('App Hide')

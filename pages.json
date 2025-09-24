@@ -29,13 +29,7 @@
 			"navigationStyle": "default"
 		}
 	},
-	{
-		"path" : "pages/settings/settings",
-		"style" : 
-		{
-			"navigationBarTitleText" : "设置"
-		}
-	},
+
 	{
 		"path" : "pages/device-detail/device-detail",
 		"style" : 
@@ -89,7 +83,7 @@
 	    }, {
 	      "pagePath": "pages/me/me",
 	      "iconPath": "/static/tabbar/me.png",
-	      "selectedIconPath": "/static/tabbar/me-active.png",
+	      "selectedIconPath": "/static/tabbar/me1.png",
 	      "text": "我的"
 	    }
 	  ]

@@ -49,6 +49,13 @@ export default {
 		// 移除主题变化监听
 		uni.$off('themeChanged', this.onThemeChanged);
 	},
+	onShow() {
+		// 每次页面显示时，都从全局状态同步并应用主题
+		const currentTheme = theme.getCurrentTheme();
+		this.isDarkMode = currentTheme === theme.THEMES.DARK;
+		theme.setNavigationBarStyle(currentTheme);
+		theme.setTabBarStyle(currentTheme);
+	},
 	methods: {
 		// 主题变化回调
 		onThemeChanged(isDark) {

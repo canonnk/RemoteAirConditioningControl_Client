@@ -13,12 +13,12 @@
 		</view>
 		
 		<view class="menu-list">
+			<view class="menu-item">
+				<text class="menu-title">深色模式</text>
+				<switch :checked="isDarkMode" @change="toggleTheme" color="#007aff" />
+			</view>
 			<view class="menu-item" @click="showUserInfo">
 				<text class="menu-title">个人信息</text>
-				<text class="menu-arrow">></text>
-			</view>
-			<view class="menu-item" @click="showSettings">
-				<text class="menu-title">设置</text>
 				<text class="menu-arrow">></text>
 			</view>
 			<view class="menu-item" @click="showAbout">
@@ -71,8 +71,12 @@ export default {
 			this.userInfo = auth.getUserInfo();
 		}
 		
-		// 刷新主题状态
-		this.isDarkMode = theme.isDarkMode();
+		// 每次页面显示时，都从全局状态同步并应用主题
+		// 这能确保从一个tab切换到另一个tab时，新页面能正确显示当前主题
+		const currentTheme = theme.getCurrentTheme();
+		this.isDarkMode = currentTheme === theme.THEMES.DARK;
+		theme.setNavigationBarStyle(currentTheme);
+		theme.setTabBarStyle(currentTheme);
 	},
 	onUnload() {
 		// 移除主题变化监听
@@ -101,10 +105,13 @@ export default {
 			});
 		},
 		
-		// 显示设置
-		showSettings() {
-			uni.navigateTo({
-				url: '/pages/settings/settings'
+		// 切换主题
+		toggleTheme(e) {
+			const isDark = e.detail.value;
+			theme.setTheme(isDark ? 'dark' : 'light');
+			uni.showToast({
+				title: isDark ? '已切换到深色模式' : '已切换到浅色模式',
+				icon: 'none'
 			});
 		},
 		
